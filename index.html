@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repositories</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        #repoContainer {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f5f5f5;
+            width: 300px;
+            margin-right: 20px;
+        }
+
+        .card h1 {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .card p {
+            margin-top: 5px;
+            color: #666;
+        }
+
+        .card button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+
+        .card button:hover {
+            background-color: #45a049;
+        }
+
+        label {
+            font-size: 16px;
+            margin-right: 10px;
+        }
+
+        select {
+            font-size: 16px;
+            padding: 5px;
+        }
+        .heading{
+          color: #45a049;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1 class="heading">My all GitHub Repositories</h1>
+    <div>
+        <label for="sortSelect">Sort by:</label>
+        <select id="sortSelect">
+            <option value="name">Name (A to Z)</option>
+            <option value="popularity">Popularity</option>
+            <option value="date">Date</option>
+        </select>
+    </div>
+    <br><br>
+    <div id="repoContainer"></div>
+
+    
+
+    <script>
+        $(document).ready(function() {
+            var username = "Tegorinternational"; // Replace with your GitHub username
+
+            function renderRepositories(repositories) {
+                var cardHtml = '';
+                for (var i = 0; i < repositories.length; i++) {
+                    var repo = repositories[i];
+                    var repoName = repo.name;
+                    var repoDescription = repo.description || "No description available";
+                    var repoUrl = repo.html_url;
+                    var homepageUrl = repo.homepage;
+                    var pagesUrl = repo.has_pages ? `https://${username}.github.io/${repoName}/` : null;
+                    var environmentsUrl = repo.environments_url ? `https://github.com/${username}/${repoName}/environments` : null;
+                    var releases = repo.releases_url ? getReleases(repo.releases_url) : [];
+                    var releaseLabel = releases.length > 0 ? 'Releases: ' + releases[0].tag_name : 'No releases';
+
+                    cardHtml += `<div class="card">
+                        <h1>${repoName}</h1>
+                        <p>${repoDescription}</p>
+                        <p>${releaseLabel}</p>
+                        <button onclick="window.open('${repoUrl}', '_blank')">Repo Link</button>`;
+
+                    if (homepageUrl) {
+                        cardHtml += `<button onclick="window.open('${homepageUrl}', '_blank')">Published Link</button>`;
+                    }
+
+                    if (pagesUrl) {
+                        cardHtml += `<button onclick="window.open('${pagesUrl}', '_blank')">GitHub Pages</button>`;
+                    }
+
+                    if (environmentsUrl) {
+                        cardHtml += `<button onclick="window.open('${environmentsUrl}', '_blank')">Environments</button>`;
+                    }
+
+                    cardHtml += `</div>`;
+                }
+
+                document.getElementById("repoContainer").innerHTML = cardHtml;
+            }
+
+            function sortRepositories(repositories, sortBy) {
+                switch (sortBy) {
+                    case "name":
+                        repositories.sort(function(a, b) {
+                            return a.name.localeCompare(b.name);
+                        });
+                        break;
+                    case "popularity":
+                        repositories.sort(function(a, b) {
+                            return b.stargazers_count - a.stargazers_count;
+                        });
+                        break;
+                    case "date":
+                        repositories.sort(function(a, b) {
+                            return new Date(b.updated_at) - new Date(a.updated_at);
+                        });
+                        break;
+                }
+
+                renderRepositories(repositories);
+            }
+
+            function getReleases(releasesUrl) {
+                var apiUrl = releasesUrl.replace('{/id}', '');
+                var releases = [];
+
+                $.ajax({
+                    url: apiUrl,
+                    async: false,
+                    success: function(data) {
+                        releases = data;
+                    }
+                });
+
+                return releases;
+            }
+
+            // Make a GET request to the GitHub API
+            $.get("https://api.github.com/users/" + username + "/repos", function(data) {
+                var repositories = data;
+
+                // Initial rendering of repositories
+                renderRepositories(repositories);
+
+                // Handle sort select change event
+                $("#sortSelect").change(function() {
+                    var selectedSort = $(this).val();
+                    sortRepositories(repositories, selectedSort);
+                });
+            });
+        });
+        
+    </script>
+</body>
+</html>
